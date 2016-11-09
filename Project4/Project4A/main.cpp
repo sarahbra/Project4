@@ -5,6 +5,7 @@
 #include <cmath>
 #include <fstream>
 #include <string>
+#include "lib.h"
 
 using namespace std;
 using namespace arma;
