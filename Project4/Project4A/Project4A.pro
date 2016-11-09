@@ -9,4 +9,6 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
+INCLUDEPATH += Lib
 SOURCES += main.cpp
+SOURCES += lib.cpp
