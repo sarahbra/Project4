@@ -4,6 +4,7 @@
 #include <armadillo>
 #include <cmath>
 #include <fstream>
+#include <string>
 
 using namespace std;
 using namespace arma;
@@ -20,10 +21,45 @@ void output(int, int, double, vec);
 
 int main()
 {
+    char *outfilename;
+    long idum;
+    int **spin_matrix, number_of_spins, mcs, E, M;
+    double w[17], average[5], temp;
+
+    outfilename = "results.txt";
+    ofile.open(outfilename);
+    number_of_spins = 2;
+    mcs = 100;
+    temp = 1;
+    // spin_matrix = new int*[number_of_spins];
+
+    //for (int i=0; i<number_of_spins; i++) {
+    //    spin_matrix[i] = new int[number_of_spins];
+    //}
+    spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
+
+    idum = 1;
+    E=M = 0;
+    for (int de= -8; de <= 8; de++) w[de+8] = 0;
+    for (int de= -8; de <= 8; de+=4) w[de+8] = exp(-de/temp);
+    for(int i=0; i<5; i++) average[i] = 0;
+
+    initializeLattice(number_of_spins, spin_matrix, E, M);
+
+    for(int cycle=1; cycle<=mcs; cycle++) {
+        Metropolis(number_of_spins,idum,E,M,w,spin_matrix);
+        average[0] += E;
+        average[1] += E*E;
+        average[2] += M;
+        average[3] += M*M;
+        average[4] += fabs(M);
+    }
+    output(number_of_spins,mcs,temp,average);
+    ofile.close();
     return 0;
 }
 
-void initializeLattice(int Nspins, mat &SpinMatrix, int &Energy, int &MagneticMoment);
+void initializeLattice(int Nspins, mat &SpinMatrix, int &Energy, int &MagneticMoment)
 {
     for(int x =0; x<Nspins; x++){
         for(int y=0; y<Nspins; y++){
@@ -33,12 +69,13 @@ void initializeLattice(int Nspins, mat &SpinMatrix, int &Energy, int &MagneticMo
         }
     }
     for(int x=0; x<Nspins; x++){
-        for(int y=o; y<Nspins; y++)
+        for(int y=o; y<Nspins; y++) {
             Energy -= (double) SpinMatrix(x,y)*
                     (SpinMatrix(periodic(x,Nspins,-1),y) +
                      SpinMatrix(x,periodic((y,Nspins, -1)));
 
-}
+        }
+    }
 }
 
 
@@ -59,6 +96,7 @@ void Metropolis(int number_of_spins, long& idum, int& E, int& M, double *w, int 
         }
     }
 }
+
 void output(int NSpins, int MCcycles, double temperature, double ExpectationValues){
     double norm = 1.0/((double) (MCcycles));
     double E_ExpectationValues = ExpectationValues(0)*norm;
