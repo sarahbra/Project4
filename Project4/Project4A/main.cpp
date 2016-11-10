@@ -32,7 +32,7 @@ int main()
     outfilename = "results.txt";
     ofile.open(outfilename);
     number_of_spins = 2;
-    mcs = 1000;
+    mcs = 100000;
 
     temp = 1.0;
 
@@ -104,8 +104,6 @@ void Metropolis(int number_of_spins, long& idum, int& E, int& M, double *w, int 
                 spin_matrix[ix][iy] *= -1;
                 M += 2*spin_matrix[ix][iy];
                 E += dE;
-
-                i++;
             }
         }
     }
@@ -113,8 +111,10 @@ void Metropolis(int number_of_spins, long& idum, int& E, int& M, double *w, int 
 
 double partition_function(double *w){
     double Z;
-    for(int i = 0; i <100; i++){
+    Z = 0;
+    for(int i = 0; i <17; i++){
         Z += w[i];
+        cout <<"Z" << Z << endl;
 
     }
     return Z;
@@ -125,7 +125,9 @@ double heat_capacity(double *average, int MCcycles, double Z)
 {
     double kT2 = 1.0;
     double norm = 1.0/((double) (MCcycles));
-    double Cv = (1./kT2)*((1/Z)*average[1]*norm - (1/(Z*Z))*average[0]*average[0]*norm*norm);
+    cout << "Z" << Z << endl;
+    //double Cv = (1./kT2)*((1/Z)*average[1]*norm - (1/(Z*Z))*average[0]*average[0]*norm*norm);
+    double Cv = (average[1]*norm - (average[0]*average[0]*norm*norm))/4.0;
     return Cv;
 }
 
