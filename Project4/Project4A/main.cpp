@@ -43,7 +43,7 @@ int main()
     for (int de= -8; de <= 8; de+=4) w[de+8] = exp(-de/temperature);
     for(int i=0; i<5; i++) average[i] = 0;
 
-    for(int i=100;i<=10e6;i*=10) {
+    for(int i=100;i<=10000;i+=100) {
         E=M=0;
         initializeLattice(number_of_spins, spin_matrix, E, M);
         for(int cycle=1; cycle<=i; cycle++) {
