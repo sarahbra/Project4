@@ -16,7 +16,7 @@ inline int periodic(int i, int limit,int add) {
     return (i+limit+add) % (limit);
 }
 
-void initializeLattice(int Nspins, int** &SpinMatrix, double &Energy, double &MagneticMoment);
+void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy, double &MagneticMoment, int ordered);
 void Metropolis(int number_of_spins, long &idum, double &E, double &M, double *w, int **spin_matrix);
 void output(int, int, double, double*);
 
@@ -51,7 +51,7 @@ int main()
     for(int i=1;i<=1000;i+=10) {
 
         E=M=0;
-        initializeLattice(number_of_spins, spin_matrix, E, M);
+        initializeLattice(number_of_spins, idum, spin_matrix, E, M, 0);
         for(int cycle=1; cycle<=i; cycle++) {
             Metropolis(number_of_spins,idum,E,M,w,spin_matrix);
             average[0] += E;
@@ -72,13 +72,20 @@ int main()
     return 0;
 }
 
-void initializeLattice(int Nspins, int** &SpinMatrix, double &Energy, double &MagneticMoment)
+void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy, double &MagneticMoment, int ordered)
 {
     for(int x =0; x<Nspins; x++){
         for(int y=0; y<Nspins; y++){
+            if(ordered==0) {
+                if(ran1(&idum)<=0.4999999999) {
+                    SpinMatrix[x][y] = -1;
+                } else {
+                    SpinMatrix[x][y] = 1;
+                }
+            } else {
             SpinMatrix[x][y] = 1.0;
             MagneticMoment += (double)SpinMatrix[x][y];
-
+            }
         }
     }
 
