@@ -33,7 +33,9 @@ int main()
     ofile.open(outfilename);
     number_of_spins = 2;
     mcs = 1000;
-    temp = 1;
+
+    temp = 1.0;
+
     // spin_matrix = new int*[number_of_spins];
 
     //for (int i=0; i<number_of_spins; i++) {
@@ -41,8 +43,9 @@ int main()
     //}
     spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
 
-    idum = 1;
+    idum = -1;
     E=M = 0;
+
     for (int de= -8; de <= 8; de++) w[de+8] = 0;
     for (int de= -8; de <= 8; de+=4) w[de+8] = exp(-de/temp);
     for(int i=0; i<5; i++) average[i] = 0;
@@ -137,7 +140,10 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
     //Variansen
 
     ofile << setiosflags(ios::showpoint  |  ios::uppercase);
-    ofile << setw(15) << setprecision(8) <<E_ExpectationValues  ;
+    ofile << setw(15) << setprecision(8) << NSpins;
+    ofile << setw(15) << setprecision(8) << MCcycles;
+    ofile << setw(15) << setprecision(8) << temperature;
+    ofile << setw(15) << setprecision(8) << E_ExpectationValues  ;
     ofile << setw(15) << setprecision(8) << E2_ExpectationValues ;
     ofile << setw(15) << setprecision(8) << M_expectationValues ;
     ofile << setw(15) << setprecision(8) << M2_ExpectationValues;
