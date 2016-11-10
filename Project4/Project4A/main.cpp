@@ -16,24 +16,24 @@ inline int periodic(int i, int limit,int add) {
     return (i+limit+add) % (limit);
 }
 
-void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &MagneticMoment);
-void Metropolis(int number_of_spins, long &idum, int &E, int &M, double *w, int **spin_matrix);
+void initializeLattice(int Nspins, int** &SpinMatrix, double &Energy, double &MagneticMoment);
+void Metropolis(int number_of_spins, long &idum, double &E, double &M, double *w, int **spin_matrix);
 void output(int, int, double, double*);
-double partition_function(double* w);
-double numeric_heat_capacity(double* average, int MCcycles, double number_of_spins);
-double analytical_heat_capacity(double number_of_spins);
+double numeric_heat_capacity(double* average, int MCcycles, int number_of_spins);
+double heat_capacity(int number_of_spins);
+double susceptibility(int number_of_spins);
 
 int main()
 {
     char *outfilename;
     long idum;
-    int **spin_matrix, number_of_spins, mcs, E, M;
-    double w[17], average[5], temperature, Z, Cv, Cv2;
+    int **spin_matrix, number_of_spins, mcs;
+    double w[17], average[5], temperature, E, M;
 
     outfilename = "results.txt";
     ofile.open(outfilename);
     number_of_spins = 2;
-    mcs = 100000;
+    mcs = 1000000;
 
     temperature = 1.0;
     spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
@@ -44,8 +44,6 @@ int main()
     for (int de= -8; de <= 8; de++) w[de+8] = 0;
     for (int de= -8; de <= 8; de+=4) w[de+8] = exp(-de/temperature);
     for(int i=0; i<5; i++) average[i] = 0;
-
-    Z = partition_function(w);
 
     initializeLattice(number_of_spins, spin_matrix, E, M);
 
@@ -63,19 +61,19 @@ int main()
     return 0;
 }
 
-void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &MagneticMoment)
+void initializeLattice(int Nspins, int** &SpinMatrix, double &Energy, double &MagneticMoment)
 {
     for(int x =0; x<Nspins; x++){
         for(int y=0; y<Nspins; y++){
             SpinMatrix[x][y] = 1.0;
-            MagneticMoment += (double) SpinMatrix[x][y];
+            MagneticMoment += (double)SpinMatrix[x][y];
 
         }
     }
 
     for(int x=0; x<Nspins; x++){
         for(int y=0; y<Nspins; y++) {
-            Energy -= (double) SpinMatrix[x][y]*
+            Energy -= (double)SpinMatrix[x][y]*
                     (SpinMatrix[periodic(x,Nspins,-1)][y] +
                      SpinMatrix[x][periodic(y,Nspins, -1)]);
         }
@@ -83,7 +81,7 @@ void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &Magnetic
 }
 
 
-void Metropolis(int number_of_spins, long& idum, int& E, int& M, double *w, int **spin_matrix) {
+void Metropolis(int number_of_spins, long& idum, double& E, double& M, double *w, int **spin_matrix) {
     int i = 0;
     int t = 0;
     for(int x=0; x<number_of_spins; x++) {
@@ -95,31 +93,32 @@ void Metropolis(int number_of_spins, long& idum, int& E, int& M, double *w, int 
                     spin_matrix[ix][periodic(iy,number_of_spins,1)] +
                     spin_matrix[periodic(ix,number_of_spins,1)][iy]);
             if(ran1(&idum)<=w[dE+8]) {
-                spin_matrix[ix][iy] *= -1;
-                M += 2*spin_matrix[ix][iy];
-                E += dE;
+                spin_matrix[ix][iy] *= -1.0;
+                M += (double)2*spin_matrix[ix][iy];
+                E += (double)dE;
             }
         }
     }
 }
 
-double partition_function(double *w){
-    double Z;
-
-    Z = 0;
-    for(int i = 0; i <17; i++){
-        Z += w[i];
-    }
-    return Z;
-}
-
-double analytical_heat_capacity(double number_of_spins) {
-    double Z, mean_E, C_v;
+double heat_capacity(int number_of_spins) {
+    double Z, E, C_v, E2;
     // for J = beta = 1, the partition function reduces to
     Z = 4*cosh(8) + 12;
-    mean_E = 32*sinh(8)/Z;
-    C_v = ((256*cosh(8))/Z - mean_E*mean_E)*1/number_of_spins*1/number_of_spins;
+    E = 32*sinh(8)/Z;
+    E2 = (256*cosh(8))/Z;
+    C_v = (E2 - E*E)*1/number_of_spins*1/number_of_spins;
     return C_v;
+}
+
+double susceptibility(int number_of_spins) {
+    double chi, m, m2, abs_m, Z;
+    Z = 4*cosh(8) + 12;
+    m = 8*exp(8)+16;
+    abs_m = fabs(m)/Z;
+    m2 = (8*(exp(8)+1))/(cosh(8)+3);
+    chi = (m2 - abs_m*abs_m)*1/number_of_spins*1/number_of_spins;
+    return chi;
 }
 
 void output(int NSpins, int MCcycles, double temperature, double* ExpectationValues){
@@ -131,13 +130,14 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
     double Mabs_ExpectationValues = ExpectationValues[4]*norm;
 
     double C_v = (E2_ExpectationValues- E_ExpectationValues*E_ExpectationValues)/NSpins/NSpins;
-    double susceptibility = (M2_ExpectationValues - M_ExpectationValues*M_ExpectationValues)/NSpins/NSpins;
-    double M2_variance = (M2_ExpectationValues - Mabs_ExpectationValues*Mabs_ExpectationValues)/NSpins/NSpins;
+    double M_variance = (M2_ExpectationValues - M_ExpectationValues*M_ExpectationValues)/NSpins/NSpins;
+    double chi = (M2_ExpectationValues - Mabs_ExpectationValues*Mabs_ExpectationValues)/NSpins/NSpins;
 
-    double C_v2 = analytical_heat_capacity(NSpins);
+    double C_v2 = heat_capacity(NSpins);
+    double chi2 = susceptibility(NSpins);
 
     cout << "Heat capacity numerical: " << C_v << ", heat capacity analytical: " << C_v2 << endl;
-    cout << "Susceptibility numerical: " << susceptibility << ", susceptibility analytical: " << endl;
+    cout << "Susceptibility numerical: " << chi << ", susceptibility analytical: " << chi2 << endl;
 
     ofile << setiosflags(ios::showpoint  |  ios::uppercase);
     ofile << setw(15) << setprecision(8) << NSpins;
@@ -148,5 +148,4 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
     ofile << setw(15) << setprecision(8) << M_ExpectationValues ;
     ofile << setw(15) << setprecision(8) << M2_ExpectationValues;
     ofile << setw(15) << setprecision(8) << Mabs_ExpectationValues;
-    ofile << setw(15) << setprecision(8) << ",";
 }
