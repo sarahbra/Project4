@@ -74,6 +74,7 @@ void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy
                 } else {
                     SpinMatrix[x][y] = 1;
                 }
+                MagneticMoment += (double)SpinMatrix[x][y];
             } else {
             SpinMatrix[x][y] = 1.0;
             MagneticMoment += (double)SpinMatrix[x][y];
