@@ -20,21 +20,22 @@ void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &Magnetic
 void Metropolis(int number_of_spins, long &idum, int &E, int &M, double *w, int **spin_matrix);
 void output(int, int, double, double*);
 double partition_function(double* w);
-double heat_capacity(double* average, int MCcycles, double Z);
+double numeric_heat_capacity(double* average, int MCcycles, double Z, double temperature);
+double analytical_heat_capacity();
 
 int main()
 {
     char *outfilename;
     long idum;
     int **spin_matrix, number_of_spins, mcs, E, M;
-    double w[17], average[5], temp, Z, Cv;
+    double w[17], average[5], temperature, Z, Cv, Cv2;
 
     outfilename = "results.txt";
     ofile.open(outfilename);
     number_of_spins = 2;
-    mcs = 100000;
+    mcs = 100000000;
 
-    temp = 1.0;
+    temperature = 1.0;
 
     // spin_matrix = new int*[number_of_spins];
 
@@ -47,7 +48,7 @@ int main()
     E=M = 0;
 
     for (int de= -8; de <= 8; de++) w[de+8] = 0;
-    for (int de= -8; de <= 8; de+=4) w[de+8] = exp(-de/temp);
+    for (int de= -8; de <= 8; de+=4) w[de+8] = exp(-de/temperature);
     for(int i=0; i<5; i++) average[i] = 0;
 
     Z = partition_function(w);
@@ -62,9 +63,10 @@ int main()
         average[3] += M*M;
         average[4] += fabs(M);
     }
-    Cv = heat_capacity(average, mcs, Z);
-    cout << "Cv" << Cv << endl;
-    output(number_of_spins,mcs,temp,average);
+    Cv = numeric_heat_capacity(average, mcs, Z, temperature);
+    Cv2 = analytical_heat_capacity();
+    cout << "Numeric Cv " << Cv << " Analytical Cv " << Cv2 << endl;
+    output(number_of_spins,mcs,temperature,average);
     ofile.close();
     return 0;
 }
@@ -111,6 +113,7 @@ void Metropolis(int number_of_spins, long& idum, int& E, int& M, double *w, int 
 
 double partition_function(double *w){
     double Z;
+
     Z = 0;
     for(int i = 0; i <17; i++){
         Z += w[i];
@@ -121,14 +124,22 @@ double partition_function(double *w){
 
 }
 
-double heat_capacity(double *average, int MCcycles, double Z)
+double numeric_heat_capacity(double *average, int MCcycles, double Z, double temperature)
 {
-    double kT2 = 1.0;
     double norm = 1.0/((double) (MCcycles));
     cout << "Z" << Z << endl;
     //double Cv = (1./kT2)*((1/Z)*average[1]*norm - (1/(Z*Z))*average[0]*average[0]*norm*norm);
     double Cv = (average[1]*norm - (average[0]*average[0]*norm*norm))/4.0;
     return Cv;
+}
+
+double analytical_heat_capacity() {
+    double Z, mean_E, C_v;
+    // for J = beta = 1, the partition function reduces to
+    Z = 4*cosh(8) + 12;
+    mean_E = 32*sinh(8)/Z;
+    C_v = ((256*cosh(8))/Z - mean_E*mean_E)/4;
+    return C_v;
 }
 
 void output(int NSpins, int MCcycles, double temperature, double* ExpectationValues){
