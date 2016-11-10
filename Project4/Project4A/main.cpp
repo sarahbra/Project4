@@ -20,8 +20,8 @@ void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &Magnetic
 void Metropolis(int number_of_spins, long &idum, int &E, int &M, double *w, int **spin_matrix);
 void output(int, int, double, double*);
 double partition_function(double* w);
-double numeric_heat_capacity(double* average, int MCcycles, double Z, double temperature);
-double analytical_heat_capacity();
+double numeric_heat_capacity(double* average, int MCcycles, double number_of_spins);
+double analytical_heat_capacity(double number_of_spins);
 
 int main()
 {
@@ -33,15 +33,9 @@ int main()
     outfilename = "results.txt";
     ofile.open(outfilename);
     number_of_spins = 2;
-    mcs = 100000000;
+    mcs = 100000;
 
     temperature = 1.0;
-
-    // spin_matrix = new int*[number_of_spins];
-
-    //for (int i=0; i<number_of_spins; i++) {
-    //    spin_matrix[i] = new int[number_of_spins];
-    //}
     spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
 
     idum = -1;
@@ -63,9 +57,7 @@ int main()
         average[3] += M*M;
         average[4] += fabs(M);
     }
-    Cv = numeric_heat_capacity(average, mcs, Z, temperature);
-    Cv2 = analytical_heat_capacity();
-    cout << "Numeric Cv " << Cv << " Analytical Cv " << Cv2 << endl;
+
     output(number_of_spins,mcs,temperature,average);
     ofile.close();
     return 0;
@@ -80,12 +72,12 @@ void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &Magnetic
 
         }
     }
+
     for(int x=0; x<Nspins; x++){
         for(int y=0; y<Nspins; y++) {
             Energy -= (double) SpinMatrix[x][y]*
                     (SpinMatrix[periodic(x,Nspins,-1)][y] +
                      SpinMatrix[x][periodic(y,Nspins, -1)]);
-
         }
     }
 }
@@ -117,28 +109,16 @@ double partition_function(double *w){
     Z = 0;
     for(int i = 0; i <17; i++){
         Z += w[i];
-        cout <<"Z" << Z << endl;
-
     }
     return Z;
-
 }
 
-double numeric_heat_capacity(double *average, int MCcycles, double Z, double temperature)
-{
-    double norm = 1.0/((double) (MCcycles));
-    cout << "Z" << Z << endl;
-    //double Cv = (1./kT2)*((1/Z)*average[1]*norm - (1/(Z*Z))*average[0]*average[0]*norm*norm);
-    double Cv = (average[1]*norm - (average[0]*average[0]*norm*norm))/4.0;
-    return Cv;
-}
-
-double analytical_heat_capacity() {
+double analytical_heat_capacity(double number_of_spins) {
     double Z, mean_E, C_v;
     // for J = beta = 1, the partition function reduces to
     Z = 4*cosh(8) + 12;
     mean_E = 32*sinh(8)/Z;
-    C_v = ((256*cosh(8))/Z - mean_E*mean_E)/4;
+    C_v = ((256*cosh(8))/Z - mean_E*mean_E)*1/number_of_spins*1/number_of_spins;
     return C_v;
 }
 
@@ -146,11 +126,18 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
     double norm = 1.0/((double) (MCcycles));
     double E_ExpectationValues = ExpectationValues[0]*norm;
     double E2_ExpectationValues = ExpectationValues[1]*norm;
-    double M_expectationValues = ExpectationValues[2]*norm;
+    double M_ExpectationValues = ExpectationValues[2]*norm;
     double M2_ExpectationValues = ExpectationValues[3]*norm;
-    double Mabs_Expectationvalues = ExpectationValues[4]*norm;
+    double Mabs_ExpectationValues = ExpectationValues[4]*norm;
 
-    //Variansen
+    double C_v = (E2_ExpectationValues- E_ExpectationValues*E_ExpectationValues)/NSpins/NSpins;
+    double susceptibility = (M2_ExpectationValues - M_ExpectationValues*M_ExpectationValues)/NSpins/NSpins;
+    double M2_variance = (M2_ExpectationValues - Mabs_ExpectationValues*Mabs_ExpectationValues)/NSpins/NSpins;
+
+    double C_v2 = analytical_heat_capacity(NSpins);
+
+    cout << "Heat capacity numerical: " << C_v << ", heat capacity analytical: " << C_v2 << endl;
+    cout << "Susceptibility numerical: " << susceptibility << ", susceptibility analytical: " << endl;
 
     ofile << setiosflags(ios::showpoint  |  ios::uppercase);
     ofile << setw(15) << setprecision(8) << NSpins;
@@ -158,9 +145,8 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
     ofile << setw(15) << setprecision(8) << temperature;
     ofile << setw(15) << setprecision(8) << E_ExpectationValues  ;
     ofile << setw(15) << setprecision(8) << E2_ExpectationValues ;
-    ofile << setw(15) << setprecision(8) << M_expectationValues ;
+    ofile << setw(15) << setprecision(8) << M_ExpectationValues ;
     ofile << setw(15) << setprecision(8) << M2_ExpectationValues;
-    ofile << setw(15) << setprecision(8) << Mabs_Expectationvalues;
+    ofile << setw(15) << setprecision(8) << Mabs_ExpectationValues;
     ofile << setw(15) << setprecision(8) << ",";
-
 }
