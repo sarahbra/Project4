@@ -16,24 +16,24 @@ inline int periodic(int i, int limit,int add) {
     return (i+limit+add) % (limit);
 }
 
-void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &MagneticMoment);
-void Metropolis(int number_of_spins, long &idum, int &E, int &M, double *w, int **spin_matrix);
+void initializeLattice(int Nspins, int** &SpinMatrix, double &Energy, double &MagneticMoment);
+void Metropolis(int number_of_spins, long &idum, double &E, double &M, double *w, int **spin_matrix);
 void output(int, int, double, double*);
 double partition_function(double* w);
-double numeric_heat_capacity(double* average, int MCcycles, double Z, double temperature);
+double numeric_heat_capacity(double* average, int MCcycles, double temperature);
 double analytical_heat_capacity();
 
 int main()
 {
     char *outfilename;
     long idum;
-    int **spin_matrix, number_of_spins, mcs, E, M;
-    double w[17], average[5], temperature, Z, Cv, Cv2;
+    int **spin_matrix, number_of_spins, mcs;
+    double w[17], average[5], temperature, Cv, Cv2, E,M;
 
     outfilename = "results.txt";
     ofile.open(outfilename);
-    number_of_spins = 2;
-    mcs = 100000000;
+    number_of_spins = 10;
+    mcs = 1000000;
 
     temperature = 1.0;
 
@@ -51,7 +51,6 @@ int main()
     for (int de= -8; de <= 8; de+=4) w[de+8] = exp(-de/temperature);
     for(int i=0; i<5; i++) average[i] = 0;
 
-    Z = partition_function(w);
 
     initializeLattice(number_of_spins, spin_matrix, E, M);
 
@@ -63,7 +62,7 @@ int main()
         average[3] += M*M;
         average[4] += fabs(M);
     }
-    Cv = numeric_heat_capacity(average, mcs, Z, temperature);
+    Cv = numeric_heat_capacity(average, mcs, temperature);
     Cv2 = analytical_heat_capacity();
     cout << "Numeric Cv " << Cv << " Analytical Cv " << Cv2 << endl;
     output(number_of_spins,mcs,temperature,average);
@@ -71,7 +70,7 @@ int main()
     return 0;
 }
 
-void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &MagneticMoment)
+void initializeLattice(int Nspins, int** &SpinMatrix, double &Energy, double &MagneticMoment)
 {
     for(int x =0; x<Nspins; x++){
         for(int y=0; y<Nspins; y++){
@@ -91,7 +90,7 @@ void initializeLattice(int Nspins, int** &SpinMatrix, int &Energy, int &Magnetic
 }
 
 
-void Metropolis(int number_of_spins, long& idum, int& E, int& M, double *w, int **spin_matrix) {
+void Metropolis(int number_of_spins, long& idum, double& E, double& M, double *w, int **spin_matrix) {
     int i = 0;
     int t = 0;
     for(int x=0; x<number_of_spins; x++) {
@@ -117,19 +116,21 @@ double partition_function(double *w){
     Z = 0;
     for(int i = 0; i <17; i++){
         Z += w[i];
-        cout <<"Z" << Z << endl;
 
     }
     return Z;
 
 }
 
-double numeric_heat_capacity(double *average, int MCcycles, double Z, double temperature)
+double numeric_heat_capacity(double *average, int MCcycles, double temperature)
 {
+    double temp1, temp2, temp3;
     double norm = 1.0/((double) (MCcycles));
-    cout << "Z" << Z << endl;
-    //double Cv = (1./kT2)*((1/Z)*average[1]*norm - (1/(Z*Z))*average[0]*average[0]*norm*norm);
-    double Cv = (average[1]*norm - (average[0]*average[0]*norm*norm))/4.0;
+    cout <<"norm"<< norm << endl;
+    temp1 = average[1];
+    temp2 = average[0];
+    temp3 = temp2*temp2;
+    double Cv = norm*(temp1 - temp3*norm)/4.0;
     return Cv;
 }
 
@@ -138,7 +139,7 @@ double analytical_heat_capacity() {
     // for J = beta = 1, the partition function reduces to
     Z = 4*cosh(8) + 12;
     mean_E = 32*sinh(8)/Z;
-    C_v = ((256*cosh(8))/Z - mean_E*mean_E)/4;
+    C_v = ((256*cosh(8))/Z - mean_E*mean_E)/4.0;
     return C_v;
 }
 
