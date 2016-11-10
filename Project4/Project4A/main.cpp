@@ -93,8 +93,6 @@ void initializeLattice(int Nspins, int** &SpinMatrix, double &Energy, double &Ma
 
 
 void Metropolis(int number_of_spins, long& idum, double& E, double& M, double *w, int **spin_matrix) {
-    int i = 0;
-    int t = 0;
     for(int x=0; x<number_of_spins; x++) {
         for(int y=0; y<number_of_spins; y++) {
             int ix = (int) (ran1(&idum)*(double)number_of_spins);
@@ -149,13 +147,18 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
 
     double M_variance = (M2_ExpectationValues - M_ExpectationValues*M_ExpectationValues)/NSpins/NSpins;
     double chi = (M2_ExpectationValues - Mabs_ExpectationValues*Mabs_ExpectationValues)/NSpins/NSpins;
+    if (NSpins==2) {
+        double C_v2 = heat_capacity(NSpins);
+        double chi2 = susceptibility(NSpins);
 
+    }
 
-    double C_v2 = heat_capacity(NSpins);
-    double chi2 = susceptibility(NSpins);
+    //double C_v2 = heat_capacity(NSpins);
+    //ouble chi2 = susceptibility(NSpins);
 
     //cout << "Heat capacity numerical: " << C_v << ", heat capacity analytical: " << C_v2 << endl;
     //cout << "Susceptibility numerical: " << chi << ", susceptibility analytical: " << chi2 << endl;
+
 
     ofile << setiosflags(ios::showpoint  |  ios::uppercase);
     //ofile << setw(15) << setprecision(8) << NSpins;
