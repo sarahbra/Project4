@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include "lib.h"
+#include <mpi/mpi.h>
 
 using namespace std;
 using namespace arma;
@@ -27,17 +28,18 @@ double susceptibility(int number_of_spins);
 
 int main()
 {
-    char outfilename[16];
+    char *outfilename;
+    outfilename = "results.txt";
     long int idum;
 
-    int **spin_matrix, number_of_spins, accepted_configurations;
+    int **spin_matrix, number_of_spins, accepted_configurations, mcs;
     double w[17], average[5], temperature, E, M, acc_conf[100];
     int runs = 1;
     accepted_configurations = 0;
-    number_of_spins = 5;
+    number_of_spins = 20;
 
-
-    temperature = 2.4;
+    mcs = 1500;
+    temperature = 1.0;
     spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
 
     idum = -1;
@@ -49,19 +51,17 @@ int main()
     for (int i = 0; i < 17; i++){
         cout << w[i]<< endl;
     }
-    for(int counter = 0; counter<runs; counter++){
         //outfilename = "results" +string(itoa(counter))+ string(".txt");
-        sprintf(outfilename,"results%d.txt", counter);
-        cout << outfilename <<endl;
+        //sprintf(outfilename,"results%d.txt", counter);
+        //cout << outfilename <<endl;
         ofile.open(outfilename);
 
         int o = 0;
-        for(int i=1;i<=1;i+=10) {
 
             E=M=0;
             //accepted_configurations = 0;
             initializeLattice(number_of_spins, idum, spin_matrix, E, M, 1);
-            for(int cycle=1; cycle<=1000; cycle++) {
+            for(int cycle=1; cycle<=mcs; cycle++) {
                 Metropolis(number_of_spins,idum,E,M,w,spin_matrix, accepted_configurations);
                 average[0] += E;
                 average[1] += E*E;
@@ -69,21 +69,15 @@ int main()
                 average[3] += M*M;
                 average[4] += fabs(M);
 
+                output(number_of_spins,cycle,temperature,average,accepted_configurations);
+
             }
 
-            output(number_of_spins,i,temperature,average,accepted_configurations);
-            for (int j=0;j<5;j++) {
-                average[j] = 0.0;
-            }
 
-            accepted_configurations = 0;
-            o = 0;
-            //cout << i << endl;
-        }
 
-        cout << counter << endl;
+
         ofile.close();
-    }
+
         return 0;
 
 }
@@ -98,7 +92,9 @@ void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy
                 } else {
                     SpinMatrix[x][y] = 1;
                 }
+
             MagneticMoment += (double)SpinMatrix[x][y];
+
             } else {
 
             SpinMatrix[x][y] = 1.0;
