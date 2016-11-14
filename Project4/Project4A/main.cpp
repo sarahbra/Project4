@@ -6,7 +6,7 @@
 #include <fstream>
 #include <string>
 #include "lib.h"
-#include <mpi/mpi.h>
+//#include <mpi/mpi.h>
 
 using namespace std;
 using namespace arma;
@@ -36,10 +36,10 @@ int main()
     double w[17], average[5], temperature, E, M, acc_conf[100];
     int runs = 1;
     accepted_configurations = 0;
-    number_of_spins = 20;
+    number_of_spins = 5;
 
-    mcs = 1500;
-    temperature = 1.0;
+    mcs = 200000;
+    temperature = 2.4;
     spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
 
     idum = -1;
@@ -56,7 +56,8 @@ int main()
         //cout << outfilename <<endl;
         ofile.open(outfilename);
 
-        int o = 0;
+        double P_E[100];
+        int tempE;
 
             E=M=0;
             //accepted_configurations = 0;
@@ -68,12 +69,16 @@ int main()
                 average[2] += M;
                 average[3] += M*M;
                 average[4] += fabs(M);
+                tempE = -1*(int) E;
+                P_E[tempE] += 1;
 
                 output(number_of_spins,cycle,temperature,average,accepted_configurations);
-
+                      //  cout <<"   " << SpinMatrix[x][y];
             }
-
-
+        cout << "------------------------" << endl;
+        for(int i=0; i<100; i++){
+            cout << P_E[i] << endl;
+        }
 
 
         ofile.close();
@@ -136,13 +141,14 @@ void Metropolis(int number_of_spins, long& idum, double& E, double& M, double *w
                 M += (double)2*spin_matrix[ix][iy];
                 E += (double)dE;
                 accepted_conf += 1;
+                cout << E << endl;
 
             }
-            cout << spin_matrix[ix][iy]<<"  ";
+            //cout << spin_matrix[ix][iy]<<"  ";
         }
-        cout << endl;
+        //cout << endl;
     }
-    cout << "------------------------------"<< accepted_conf << endl;
+    //cout << "------------------------------"<< accepted_conf << endl;
 }
 
 
@@ -192,8 +198,8 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
     //cout << "Susceptibility numerical: " << chi << ", susceptibility analytical: " << chi2 << endl;
 
 
-    ofile << setiosflags(ios::showpoint  |  ios::uppercase);
-    //ofile << setw(15) << setprecision(8) << NSpins;
+    //ofile << setiosflags(ios::showpoint  |  ios::uppercase);
+    ofile << setw(15) << setprecision(8) << NSpins;
     ofile << setw(15) << setprecision(8) << MCcycles;
     ofile << setw(15) << setprecision(8) << temperature;
 
