@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include "lib.h"
+//#include <mpi/mpi.h>
 
 using namespace std;
 using namespace arma;
@@ -17,23 +18,31 @@ inline int periodic(int i, int limit,int add) {
 }
 
 void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy, double &MagneticMoment, int ordered);
-void Metropolis(int number_of_spins, int& count, int Energy, long &idum, double &E, double &M, double *w, int **spin_matrix);
-void output(int, int, double, double*);
+void Metropolis(int number_of_spins, long &idum, double &E, double &M, double *w, int **spin_matrix, int& accepted_conf);
+void output(int NSpins, int MCcycles, double temperature, double* ExpectationValues, int& accepted_conf);
 double partition_function();
+
+double numeric_heat_capacity(double* average, int MCcycles, int number_of_spins);
+
 double heat_capacity(int number_of_spins);
 double susceptibility(int number_of_spins);
+
 
 int main()
 {
     char *outfilename;
     long idum;
-    int **spin_matrix, number_of_spins, mcycles, count, probability[17];
-    double w[17], average[5], temperature, E, M;
+    int **spin_matrix, number_of_spins, mcs, count, probability[17], accepted_configurations;
+    double w[17], average[5], temperature, E, M, acc_conf[100];
 
     outfilename = "results.txt";
     ofile.open(outfilename);
-    number_of_spins = 10.0;
+    number_of_spins = 20;
 
+    int runs = 1;
+    accepted_configurations = 0;
+
+    mcs = 2000;
     temperature = 2.4;
     spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
 
@@ -44,29 +53,40 @@ int main()
     for (int de= -8; de <= 8; de+=4) w[de+8] = exp(-de/temperature);
     for(int i=0; i<5; i++) average[i] = 0;
 
-    for(int Energy=-8;Energy<=8;Energy+=4) {
-        E=M=0;
+    //outfilename = "results" +string(itoa(counter))+ string(".txt");
+    //sprintf(outfilename,"results%d.txt", counter);
+    //cout << outfilename <<endl;
+    ofile.open(outfilename);
 
-        initializeLattice(number_of_spins, idum, spin_matrix, E, M, 1);
-        for(int cycle=1; cycle<=mcycles; cycle++) {
-                Metropolis(number_of_spins,count,Energy,idum,E,M,w,spin_matrix);
-                average[0] += E;
-                average[1] += E*E;
-                average[2] += M;
-                average[3] += M*M;
-                average[4] += fabs(M);
-        }
-        probability[Energy+8] = count;
-        cout << "Probability of E = " << Energy << " : " << probability[Energy+8] << endl;
+    double P_E[100];
+    int Energy[mcs];
 
-        output(number_of_spins,mcycles,temperature,average);
-        for (int j=0;j<5;j++) {
-            average[j] = 0.0;
-        }
-        count = 0;
-    }
+    E=M=0;
+    //accepted_configurations = 0;
+    initializeLattice(number_of_spins, idum, spin_matrix, E, M, 0);
+    for(int cycle=1; cycle<=mcs; cycle++) {
+        Metropolis(number_of_spins,idum,E,M,w,spin_matrix,accepted_configurations);
+        average[0] += E;
+        average[1] += E*E;
+        average[2] += M;
+        average[3] += M*M;
+        average[4] += fabs(M);
+        Energy[cycle] = E;
+
+        output(number_of_spins,cycle,temperature,average,accepted_configurations);
+        //  cout <<"   " << SpinMatrix[x][y];
+     }
+     for(int i=0; i<mcs; i++){
+          cout << Energy[i] << endl;
+     }
+
+     for (int j=0;j<5;j++) {
+         average[j] = 0.0;
+     }
+
     ofile.close();
     return 0;
+
 }
 
 void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy, double &MagneticMoment, int ordered)
@@ -79,13 +99,19 @@ void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy
                 } else {
                     SpinMatrix[x][y] = 1;
                 }
-                MagneticMoment += (double)SpinMatrix[x][y];
+
+            MagneticMoment += (double)SpinMatrix[x][y];
+
             } else {
+
             SpinMatrix[x][y] = 1.0;
             MagneticMoment += (double)SpinMatrix[x][y];
             }
+            //cout <<"   " << SpinMatrix[x][y];
         }
+        //cout << endl;
     }
+    //cout <<"M"<< MagneticMoment << endl;
 
     for(int x=0; x<Nspins; x++){
         for(int y=0; y<Nspins; y++) {
@@ -97,25 +123,34 @@ void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy
 }
 
 
-void Metropolis(int number_of_spins, int& count, int Energy, long& idum, double& E, double& M, double *w, int **spin_matrix) {
+void Metropolis(int number_of_spins, long& idum, double& E, double& M, double *w, int **spin_matrix, int& accepted_conf) {
     for(int x=0; x<number_of_spins; x++) {
         for(int y=0; y<number_of_spins; y++) {
             int ix = (int) (ran1(&idum)*(double)number_of_spins);
             int iy = (int) (ran1(&idum)*(double)number_of_spins);
+            //cout << "ix  " << ix << " iy  "<< iy << endl;
             int dE = 2*spin_matrix[ix][iy]*(spin_matrix[ix][periodic(iy,number_of_spins,-1)] +
                     spin_matrix[periodic(ix,number_of_spins,-1)][iy] +
                     spin_matrix[ix][periodic(iy,number_of_spins,1)] +
                     spin_matrix[periodic(ix,number_of_spins,1)][iy]);
-            if(Energy == dE) {
-                count++;
-            }
+
+            //cout << "temp" << temp1 << "   " << temp2 <<"   " << temp1+ temp2 << endl;
+            //cout << ran1(&idum)<< "   " << w[dE + 8] << "   " <<  endl;
             if(ran1(&idum)<=w[dE+8]) {
+
                 spin_matrix[ix][iy] *= -1.0;
+                //cout << "spinmatrix" << spin_matrix[ix][iy] <<endl;
                 M += (double)2*spin_matrix[ix][iy];
                 E += (double)dE;
+                accepted_conf += 1;
+                cout << E << endl;
+
             }
+            //cout << spin_matrix[ix][iy]<<"  ";
         }
+        //cout << endl;
     }
+    //cout << "------------------------------"<< accepted_conf << endl;
 }
 
 double partition_function() {
@@ -125,6 +160,7 @@ double partition_function() {
 
 double heat_capacity(int number_of_spins) {
     double Z, E, C_v, E2;
+
     // for J = beta = 1, the partition function reduces to
     Z = partition_function();
     E = 32*sinh(8)/Z;
@@ -143,32 +179,40 @@ double susceptibility(int number_of_spins) {
     return chi;
 }
 
-void output(int NSpins, int MCcycles, double temperature, double* ExpectationValues){
+void output(int NSpins, int MCcycles, double temperature, double* ExpectationValues, int& accepted_conf){
     double norm = 1.0/((double) (MCcycles));
     double E_ExpectationValues = ExpectationValues[0]*norm;
     double E2_ExpectationValues = ExpectationValues[1]*norm;
     double M_ExpectationValues = ExpectationValues[2]*norm;
     double M2_ExpectationValues = ExpectationValues[3]*norm;
     double Mabs_ExpectationValues = ExpectationValues[4]*norm;
-
     double C_v = (E2_ExpectationValues- E_ExpectationValues*E_ExpectationValues)/NSpins/NSpins;
+
     double M_variance = (M2_ExpectationValues - M_ExpectationValues*M_ExpectationValues)/NSpins/NSpins;
     double chi = (M2_ExpectationValues - Mabs_ExpectationValues*Mabs_ExpectationValues)/NSpins/NSpins;
     if (NSpins==2) {
         double C_v2 = heat_capacity(NSpins);
         double chi2 = susceptibility(NSpins);
 
-        cout << "Heat capacity numerical: " << C_v << ", heat capacity analytical: " << C_v2 << endl;
-        cout << "Susceptibility numerical: " << chi << ", susceptibility analytical: " << chi2 << endl;
     }
 
-    ofile << setiosflags(ios::showpoint  |  ios::uppercase);
-    //ofile << setw(15) << setprecision(8) << NSpins;
+    //double C_v2 = heat_capacity(NSpins);
+    //ouble chi2 = susceptibility(NSpins);
+
+    //cout << "Heat capacity numerical: " << C_v << ", heat capacity analytical: " << C_v2 << endl;
+    //cout << "Susceptibility numerical: " << chi << ", susceptibility analytical: " << chi2 << endl;
+
+
+    //ofile << setiosflags(ios::showpoint  |  ios::uppercase);
+    ofile << setw(15) << setprecision(8) << NSpins;
     ofile << setw(15) << setprecision(8) << MCcycles;
     ofile << setw(15) << setprecision(8) << temperature;
+
     ofile << setw(15) << setprecision(8) << E_ExpectationValues;
     //ofile << setw(15) << setprecision(8) << E2_ExpectationValues ;
     //ofile << setw(15) << setprecision(8) << M_ExpectationValues ;
     //ofile << setw(15) << setprecision(8) << M2_ExpectationValues;
-    ofile << setw(15) << setprecision(8) << Mabs_ExpectationValues << endl;
+    ofile << setw(15) << setprecision(8) << Mabs_ExpectationValues;
+    ofile << setw(15) << setprecision(8) << accepted_conf << endl;
+
 }
