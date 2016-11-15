@@ -36,9 +36,9 @@ int main()
     double w[17], average[5], temperature, E, M, acc_conf[100];
     int runs = 1;
     accepted_configurations = 0;
-    number_of_spins = 5;
+    number_of_spins = 20;
 
-    mcs = 200000;
+    mcs = 10000;
     temperature = 2.4;
     spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
 
@@ -54,36 +54,38 @@ int main()
         //outfilename = "results" +string(itoa(counter))+ string(".txt");
         //sprintf(outfilename,"results%d.txt", counter);
         //cout << outfilename <<endl;
-        ofile.open(outfilename);
+    ofile.open(outfilename);
 
-        double P_E[100];
-        int tempE;
-
-            E=M=0;
-            //accepted_configurations = 0;
-            initializeLattice(number_of_spins, idum, spin_matrix, E, M, 1);
-            for(int cycle=1; cycle<=mcs; cycle++) {
-                Metropolis(number_of_spins,idum,E,M,w,spin_matrix, accepted_configurations);
-                average[0] += E;
-                average[1] += E*E;
-                average[2] += M;
-                average[3] += M*M;
-                average[4] += fabs(M);
-                tempE = -1*(int) E;
-                P_E[tempE] += 1;
-
-                output(number_of_spins,cycle,temperature,average,accepted_configurations);
-                      //  cout <<"   " << SpinMatrix[x][y];
-            }
-        cout << "------------------------" << endl;
-        for(int i=0; i<100; i++){
-            cout << P_E[i] << endl;
-        }
+    ofile << "Cycles  " << "E   "  << "Mabs  " << "accepted   " <<"ordered" << endl;
+    double P_E[100];
+    int tempE;
+    int j = 1;
+    E=M=0;
+    //accepted_configurations = 0;
+    initializeLattice(number_of_spins, idum, spin_matrix, E, M, 0);
+        for(int cycle=1; cycle<=mcs; cycle++) {
+            Metropolis(number_of_spins,idum,E,M,w,spin_matrix, accepted_configurations);
+            average[0] += E;
+            average[1] += E*E;
+            average[2] += M;
+            average[3] += M*M;
+            average[4] += fabs(M);
+            tempE = -1*(int) E;
+            P_E[tempE] += 1;
 
 
-        ofile.close();
+            output(number_of_spins,cycle,temperature,average,accepted_configurations);
 
-        return 0;
+
+    //cout << "------------------------" << endl;
+    //for(int i=0; i<100; i++){
+    //    cout << P_E[i] << endl;
+    }
+
+
+    ofile.close();
+
+    return 0;
 
 }
 
@@ -141,7 +143,7 @@ void Metropolis(int number_of_spins, long& idum, double& E, double& M, double *w
                 M += (double)2*spin_matrix[ix][iy];
                 E += (double)dE;
                 accepted_conf += 1;
-                cout << E << endl;
+                //cout << E << endl;
 
             }
             //cout << spin_matrix[ix][iy]<<"  ";
@@ -185,11 +187,11 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
 
     double M_variance = (M2_ExpectationValues - M_ExpectationValues*M_ExpectationValues)/NSpins/NSpins;
     double chi = (M2_ExpectationValues - Mabs_ExpectationValues*Mabs_ExpectationValues)/NSpins/NSpins;
-    if (NSpins==2) {
-        double C_v2 = heat_capacity(NSpins);
-        double chi2 = susceptibility(NSpins);
 
-    }
+    double C_v2 = heat_capacity(NSpins);
+    double chi2 = susceptibility(NSpins);
+
+
 
     //double C_v2 = heat_capacity(NSpins);
     //ouble chi2 = susceptibility(NSpins);
@@ -199,9 +201,9 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
 
 
     //ofile << setiosflags(ios::showpoint  |  ios::uppercase);
-    ofile << setw(15) << setprecision(8) << NSpins;
+    //ofile << setw(15) << setprecision(8) << NSpins;
     ofile << setw(15) << setprecision(8) << MCcycles;
-    ofile << setw(15) << setprecision(8) << temperature;
+    //ofile << setw(15) << setprecision(8) << temperature;
 
     ofile << setw(15) << setprecision(8) << E_ExpectationValues;
     //ofile << setw(15) << setprecision(8) << E2_ExpectationValues ;
@@ -209,5 +211,8 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
     //ofile << setw(15) << setprecision(8) << M2_ExpectationValues;
     ofile << setw(15) << setprecision(8) << Mabs_ExpectationValues;
     ofile << setw(15) << setprecision(8) << accepted_conf << endl;
+    //ofile << setw(15) << setprecision(8) << C_v;
+    //ofile << setw(15) << setprecision(8) << chi << endl;
+
 
 }
