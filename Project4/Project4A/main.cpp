@@ -23,14 +23,13 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
 double partition_function();
 
 double numeric_heat_capacity(double* average, int MCcycles, int number_of_spins);
-
 double heat_capacity(int number_of_spins);
 double susceptibility(int number_of_spins);
 
 
 int main()
 {
-    char *outfilename;
+    char *outfilename, *outfilename2;
     long idum;
     int **spin_matrix, number_of_spins, mcs, count, accepted_configurations;
     double w[17], average[5], temperature, E, M;
@@ -39,10 +38,10 @@ int main()
     ofile.open(outfilename);
     number_of_spins = 20;
 
-    int runs = 1;
+    //int runs = 1;
     accepted_configurations = 0;
 
-    mcs = 2000;
+    mcs = 20000;
     temperature = 2.4;
     spin_matrix = (int**) matrix(number_of_spins,number_of_spins,sizeof(int));
 
@@ -56,9 +55,8 @@ int main()
     //outfilename = "results" +string(itoa(counter))+ string(".txt");
     //sprintf(outfilename,"results%d.txt", counter);
     //cout << outfilename <<endl;
-    ofile.open(outfilename);
 
-    int Energy[mcs];
+    int Energy[mcs-1500];
 
     E=M=0;
     initializeLattice(number_of_spins, idum, spin_matrix, E, M, 0);
@@ -69,7 +67,9 @@ int main()
         average[2] += M;
         average[3] += M*M;
         average[4] += fabs(M);
-        Energy[cycle] = E;
+        if (cycle>=1500) {
+            Energy[cycle-1500] = E;
+        }
 
         output(number_of_spins,cycle,temperature,average,accepted_configurations);
      }
@@ -81,10 +81,10 @@ int main()
     ofile.close();
     outfilename = "results_E.txt";
     ofile.open(outfilename);
-    for (int i=0; i<mcs; i++) {
+    for (int i=0; i<(mcs-1500); i++) {
         ofile << setw(15) << setprecision(8) << Energy[i] << endl;
     }
-
+    ofile.close();
     return 0;
 
 }
@@ -201,5 +201,4 @@ void output(int NSpins, int MCcycles, double temperature, double* ExpectationVal
     //ofile << setw(15) << setprecision(8) << M2_ExpectationValues;
     ofile << setw(15) << setprecision(8) << Mabs_ExpectationValues;
     ofile << setw(15) << setprecision(8) << accepted_conf << endl;
-
 }
