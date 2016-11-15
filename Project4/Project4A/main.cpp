@@ -32,8 +32,8 @@ int main()
 {
     char *outfilename;
     long idum;
-    int **spin_matrix, number_of_spins, mcs, count, probability[17], accepted_configurations;
-    double w[17], average[5], temperature, E, M, acc_conf[100];
+    int **spin_matrix, number_of_spins, mcs, count, accepted_configurations;
+    double w[17], average[5], temperature, E, M;
 
     outfilename = "results.txt";
     ofile.open(outfilename);
@@ -58,11 +58,9 @@ int main()
     //cout << outfilename <<endl;
     ofile.open(outfilename);
 
-    double P_E[100];
     int Energy[mcs];
 
     E=M=0;
-    //accepted_configurations = 0;
     initializeLattice(number_of_spins, idum, spin_matrix, E, M, 0);
     for(int cycle=1; cycle<=mcs; cycle++) {
         Metropolis(number_of_spins,idum,E,M,w,spin_matrix,accepted_configurations);
@@ -74,10 +72,6 @@ int main()
         Energy[cycle] = E;
 
         output(number_of_spins,cycle,temperature,average,accepted_configurations);
-        //  cout <<"   " << SpinMatrix[x][y];
-     }
-     for(int i=0; i<mcs; i++){
-          cout << Energy[i] << endl;
      }
 
      for (int j=0;j<5;j++) {
@@ -85,6 +79,12 @@ int main()
      }
 
     ofile.close();
+    outfilename = "results_E.txt";
+    ofile.open(outfilename);
+    for (int i=0; i<mcs; i++) {
+        ofile << setw(15) << setprecision(8) << Energy[i] << endl;
+    }
+
     return 0;
 
 }
@@ -107,11 +107,8 @@ void initializeLattice(int Nspins, long &idum, int** &SpinMatrix, double &Energy
             SpinMatrix[x][y] = 1.0;
             MagneticMoment += (double)SpinMatrix[x][y];
             }
-            //cout <<"   " << SpinMatrix[x][y];
         }
-        //cout << endl;
     }
-    //cout <<"M"<< MagneticMoment << endl;
 
     for(int x=0; x<Nspins; x++){
         for(int y=0; y<Nspins; y++) {
@@ -128,29 +125,19 @@ void Metropolis(int number_of_spins, long& idum, double& E, double& M, double *w
         for(int y=0; y<number_of_spins; y++) {
             int ix = (int) (ran1(&idum)*(double)number_of_spins);
             int iy = (int) (ran1(&idum)*(double)number_of_spins);
-            //cout << "ix  " << ix << " iy  "<< iy << endl;
             int dE = 2*spin_matrix[ix][iy]*(spin_matrix[ix][periodic(iy,number_of_spins,-1)] +
                     spin_matrix[periodic(ix,number_of_spins,-1)][iy] +
                     spin_matrix[ix][periodic(iy,number_of_spins,1)] +
                     spin_matrix[periodic(ix,number_of_spins,1)][iy]);
 
-            //cout << "temp" << temp1 << "   " << temp2 <<"   " << temp1+ temp2 << endl;
-            //cout << ran1(&idum)<< "   " << w[dE + 8] << "   " <<  endl;
             if(ran1(&idum)<=w[dE+8]) {
 
                 spin_matrix[ix][iy] *= -1.0;
-                //cout << "spinmatrix" << spin_matrix[ix][iy] <<endl;
                 M += (double)2*spin_matrix[ix][iy];
                 E += (double)dE;
-                accepted_conf += 1;
-                cout << E << endl;
-
             }
-            //cout << spin_matrix[ix][iy]<<"  ";
         }
-        //cout << endl;
     }
-    //cout << "------------------------------"<< accepted_conf << endl;
 }
 
 double partition_function() {
