@@ -1,0 +1,62 @@
+from matplotlib.pyplot import *
+
+number_spins = 20.
+f = open('results4c0T1.000000.txt')
+f2 = open('results4c1T1.000000.txt')
+mcs = []
+mcs2 = []
+E = []
+E2 = []
+Mabs = []
+Mabs2 = []
+acc_conf = []
+acc_conf2 = []
+
+for line in f.readlines()[2:]:
+    temp = line.split(",")
+    mcs.append(float(temp[0]))
+    E.append(float(temp[1]))
+    Mabs.append(float(temp[4]))
+    acc_conf.append(float(temp[5]))
+f.close()
+for line in f2.readlines()[2:]:
+    temp = line.split(",")
+    mcs2.append(float(temp[0]))
+    E2.append(float(temp[1]))
+    Mabs2.append(float(temp[4]))
+    acc_conf2.append(float(temp[5]))
+f2.close()
+E = np.array(E);
+Mabs = np.array(Mabs);
+
+E = E/number_spins**2
+Mabs = Mabs/number_spins**2
+
+E2 = np.array(E2);
+Mabs2 = np.array(Mabs2);
+
+E2 = E2/number_spins**2
+Mabs2 = Mabs2/number_spins**2
+
+figure()
+subplot(2,1,1)
+
+
+figure()
+plot( x,E,label="Ordered lattice")
+plot(x1, E1,label="Unordened lattice")
+title("E(t) for kbT=1.0")
+xlabel("t(Monte Carlo cycles)")
+ylabel("E(t)")
+legend()
+
+subplot(2,1,2)
+plot( x,Mabs,label="Ordered lattice")
+plot(x1, Mabs1,label="Unordened lattice")
+title("M(t), kbT=1.0")
+xlabel("t(Monte Carlo cycles)")
+ylabel("abs(M(t))")
+legend()
+
+show()
+    

@@ -46,8 +46,7 @@ int main(int argc, char* argv[])
     MPI_Comm_rank (MPI_COMM_WORLD, &RankProcess);
 
 
-    mcs = 100000;
-
+    mcs = 700000;
 
     sprintf(outfilename,"results4e_Spins%d_mcs%d.txt", number_of_spins,mcs);
     ofile.open(outfilename);
@@ -63,7 +62,7 @@ int main(int argc, char* argv[])
     int j =1;
 
 
-    for(temperature=2.0; temperature <=2.3; temperature += 0.05 ){
+    for(temperature=2.0; temperature <2.31; temperature += 0.01 ){
         for (int j=0;j<5;j++) {
            average[j] = 0.0;
         }
@@ -78,12 +77,12 @@ int main(int argc, char* argv[])
         for(int cycle=1; cycle<=mcs; cycle++) {
 
                 Metropolis(number_of_spins,idum,E,M,w,spin_matrix,accepted_configurations);
+                    average[0] += E;
+                    average[1] += E*E;
+                    average[2] += M;
+                    average[3] += M*M;
+                    average[4] += fabs(M);
 
-                average[0] += E;
-                average[1] += E*E;
-                average[2] += M;
-                average[3] += M*M;
-                average[4] += fabs(M);
 
         }
 
